@@ -34,31 +34,31 @@ void ApplyPlaneRotation(std::complex<double> &dx, std::complex<double> &dy, std:
 int main(int argc, char * argv[])
 {
 
-//	DECLARATION OF VARIABLES
-	double start,end;           /* Used in timing the GMRES routine */
-	int i,j,k, N = 320,L=768;   /* N is the number of spatial steps, L is the number of time steps */
-	double h = 1.0/(N-1);       /* The size of the spatial discretisaion step */ 
-	double timestep = 1.0/L;    /* Timestep length */
+//  DECLARATION OF VARIABLES
+    double start,end;           /* Used in timing the GMRES routine */
+    int i,j,k, N = 320,L=768;   /* N is the number of spatial steps, L is the number of time steps */
+    double h = 1.0/(N-1);       /* The size of the spatial discretisaion step */ 
+    double timestep = 1.0/L;    /* Timestep length */
 
-	std::complex<double> *A,*x,*q,*y,*pointertolargeblocked,*b;
-	std::complex<double> *massContig,*stiffContig;
-	std::complex<double> *F,*D,*Ft;
+    std::complex<double> *A,*x,*q,*y,*pointertolargeblocked,*b;
+    std::complex<double> *massContig,*stiffContig;
+    std::complex<double> *F,*D,*Ft;
 
     std::vector<double> timesteps,times,perts;
 
-	int totalnodes,mynode;
-	std::vector<std::complex<double>*> Wblocks,Ablocks;
+    int totalnodes,mynode;
+    std::vector<std::complex<double>*> Wblocks,Ablocks;
     std::complex<double>** UMonolithic,**UtMonolithic;
-	MPI_Init(&argc,&argv);
-	MPI_Comm_size(MPI_COMM_WORLD, &totalnodes);
-	MPI_Comm_rank(MPI_COMM_WORLD, &mynode);
+    MPI_Init(&argc,&argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &totalnodes);
+    MPI_Comm_rank(MPI_COMM_WORLD, &mynode);
 
 // RESERVATION OF MEMORY
 
-	// Intermediate calculation vectors
-	y = new std::complex<double>[N*L];
-	x = new std::complex<double>[N*L];
-	q = new std::complex<double>[N*L];
+    // Intermediate calculation vectors
+    y = new std::complex<double>[N*L];
+    x = new std::complex<double>[N*L];
+    q = new std::complex<double>[N*L];
 
 
     // Right hand side vector
@@ -75,22 +75,22 @@ int main(int argc, char * argv[])
     // We take a different ideology with matrices. Due to thier size
     // only small matrices will be distributed across all nodes.
 
-	if(mynode==0)
-	{
-		// Reservation of memory on the master node.
-		tridiag mass; CreateTridiag(N,mass);
-		tridiag stiff; CreateTridiag(N,stiff);
-		F = CreateMatrixContiguous(L,L);
-		D = CreateMatrixContiguous(L,L);
-		Ft = CreateMatrixContiguous(L,L);
+    if(mynode==0)
+    {
+        // Reservation of memory on the master node.
+        tridiag mass; CreateTridiag(N,mass);
+        tridiag stiff; CreateTridiag(N,stiff);
+        F = CreateMatrixContiguous(L,L);
+        D = CreateMatrixContiguous(L,L);
+        Ft = CreateMatrixContiguous(L,L);
 
 
-		// Formation of the mass and stiffness matrix.
-		// The Fourier basis matrix F, its transpose Ft,
-		// and the diagonal matrix of eigenvalues D are
-		// also formed.
-		FormMassStiff(h,N,mass,stiff);
-		FormFourier_Diag_FourierTranspose(L,F,D,Ft);
+        // Formation of the mass and stiffness matrix.
+        // The Fourier basis matrix F, its transpose Ft,
+        // and the diagonal matrix of eigenvalues D are
+        // also formed.
+        FormMassStiff(h,N,mass,stiff);
+        FormFourier_Diag_FourierTranspose(L,F,D,Ft);
 
 //
 // FORMATION OF W: BEGIN
@@ -100,45 +100,45 @@ int main(int argc, char * argv[])
         // Reference: See Goddard Wathen
 
         // Temporary structures used in formation of matrices
-		tridiag stiffA0;CreateTridiag(N,stiffA0);
+        tridiag stiffA0;CreateTridiag(N,stiffA0);
         SetTriDiagEqualTo(N,stiff,stiffA0);
  
         MultiplyTriDiagByConst(N,timestep*timestep,stiffA0);
 
         // At this point we have
-		//  stiffA0 = timestep*timestep*K
+        //  stiffA0 = timestep*timestep*K
 
-		std::vector<tridiag> tridaigVec;
+        std::vector<tridiag> tridaigVec;
 
         // Reserve memory 
-		for(int i=0;i<L;i++)
-		{
-			tridiag temp; CreateTridiag(N,temp);
-			tridaigVec.push_back(temp);
-		}
+        for(int i=0;i<L;i++)
+        {
+            tridiag temp; CreateTridiag(N,temp);
+            tridaigVec.push_back(temp);
+        }
         // Multiply A1 by eigenvalue and ADD to A0
-		for(int i=0;i<L;i++)
-		{
-			tridiag temp;CreateTridiag(N,temp);
-			SetTriDiagEqualTo(N,mass,temp);
-			MultiplyTriDiagByConst(N,(1.0 - 2.0*D[i*L+i] + D[i*L+i]*D[i*L+i]),temp);
-			AddTriDiag(N,temp,stiffA0,tridaigVec[i]);
-		}
+        for(int i=0;i<L;i++)
+        {
+            tridiag temp;CreateTridiag(N,temp);
+            SetTriDiagEqualTo(N,mass,temp);
+            MultiplyTriDiagByConst(N,(1.0 - 2.0*D[i*L+i] + D[i*L+i]*D[i*L+i]),temp);
+            AddTriDiag(N,temp,stiffA0,tridaigVec[i]);
+        }
         // Reserve memory for contiguous counterparts
-		for(int i=0;i<L;i++)
-		{
-			std::complex<double> *pointertolargeblocked = new std::complex<double>[3*N-2];
-			Wblocks.push_back(pointertolargeblocked);
-		}
+        for(int i=0;i<L;i++)
+        {
+            std::complex<double> *pointertolargeblocked = new std::complex<double>[3*N-2];
+            Wblocks.push_back(pointertolargeblocked);
+        }
         // Fill the contiguous counterparts
-		for(int i=0;i<L;i++)
-		{
-			for(j=0;j<N-1;j++) Wblocks[i][j] = std::get<0>(tridaigVec[i])[j];
-			for(j=0;j<N  ;j++) Wblocks[i][N-1+j] = std::get<1>(tridaigVec[i])[j];
-			for(j=0;j<N-1;j++) Wblocks[i][2*N-1+j] = std::get<2>(tridaigVec[i])[j];
+        for(int i=0;i<L;i++)
+        {
+            for(j=0;j<N-1;j++) Wblocks[i][j] = std::get<0>(tridaigVec[i])[j];
+            for(j=0;j<N  ;j++) Wblocks[i][N-1+j] = std::get<1>(tridaigVec[i])[j];
+            for(j=0;j<N-1;j++) Wblocks[i][2*N-1+j] = std::get<2>(tridaigVec[i])[j];
             Wblocks[i][N-1] = 1;
             Wblocks[i][2*N-2] = 1;
-		}
+        }
 
 //
 // FORMATION OF W: END
@@ -156,34 +156,34 @@ int main(int argc, char * argv[])
         // A1 = -M.
         tridaigVec.clear();
         // Reserve memory
-		for(int i=0;i<L;i++)
-		{
-			tridiag temp; CreateTridiag(N,temp);
-			tridaigVec.push_back(temp);
-		}
+        for(int i=0;i<L;i++)
+        {
+            tridiag temp; CreateTridiag(N,temp);
+            tridaigVec.push_back(temp);
+        }
         // Multiply A1 by timestep and package
-		for(int i=0;i<L;i++)
-		{
-			tridiag temp;CreateTridiag(N,temp);
+        for(int i=0;i<L;i++)
+        {
+            tridiag temp;CreateTridiag(N,temp);
             SetTriDiagEqualTo(N,stiff,temp);
-			MultiplyTriDiagByConst(N,timestep*timestep,temp);
-			AddTriDiag(N,temp,mass,tridaigVec[i]);
-		}
+            MultiplyTriDiagByConst(N,timestep*timestep,temp);
+            AddTriDiag(N,temp,mass,tridaigVec[i]);
+        }
         // Reserve memory for contiguous counterparts
-		for(int i=0;i<L;i++)
-		{
-			std::complex<double> *pointertolargeblocked = new std::complex<double>[3*N-2];
-			Ablocks.push_back(pointertolargeblocked);
-		}
+        for(int i=0;i<L;i++)
+        {
+            std::complex<double> *pointertolargeblocked = new std::complex<double>[3*N-2];
+            Ablocks.push_back(pointertolargeblocked);
+        }
         // Fill the contiguous counterparts
-		for(int i=0;i<L;i++)
-		{
-			for(j=0;j<N-1;j++) Ablocks[i][j] = std::get<0>(tridaigVec[i])[j];
-			for(j=0;j<N  ;j++) Ablocks[i][N-1+j] = std::get<1>(tridaigVec[i])[j];
-			for(j=0;j<N-1;j++) Ablocks[i][2*N-1+j] = std::get<2>(tridaigVec[i])[j];
+        for(int i=0;i<L;i++)
+        {
+            for(j=0;j<N-1;j++) Ablocks[i][j] = std::get<0>(tridaigVec[i])[j];
+            for(j=0;j<N  ;j++) Ablocks[i][N-1+j] = std::get<1>(tridaigVec[i])[j];
+            for(j=0;j<N-1;j++) Ablocks[i][2*N-1+j] = std::get<2>(tridaigVec[i])[j];
             Ablocks[i][N-1] = 1;
             Ablocks[i][2*N-2] = 1;
-		}
+        }
 //
 // FORMATION OF Ablocks: END
 //
@@ -252,7 +252,7 @@ int main(int argc, char * argv[])
     MPI_Bcast(b,N*L,MPI_DOUBLE_COMPLEX,0,MPI_COMM_WORLD);
 
 //
-//	THE CALCULATION PHASE
+//  THE CALCULATION PHASE
 //  
 
 
@@ -279,10 +279,10 @@ int main(int argc, char * argv[])
 
     // Standard procedure is to measure the time taken to complete
     // the calculation on the master node
-	if(mynode == 0)
-	{
-		start = MPI_Wtime();
-	}
+    if(mynode == 0)
+    {
+        start = MPI_Wtime();
+    }
 
 
 // ----------------------Calculaution Phase Begin ----------------------------------------------------
@@ -290,7 +290,7 @@ int main(int argc, char * argv[])
     // As we are measuring on node 0, we want all processes to
     // "meet up" before entering the calculation stage.
 
-	MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
 // ---------------------------- GMRES BEGIN ----------------------------------------------------------
@@ -403,17 +403,17 @@ int main(int argc, char * argv[])
 // ----------------------Calculaution Phase End ---------------------------------------------------
 
 
-	MPI_Barrier(MPI_COMM_WORLD);
-	if(mynode == 0)
-	{
-		end = MPI_Wtime();
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(mynode == 0)
+    {
+        end = MPI_Wtime();
         // Print the time taken for the calculation to complete
-		std::cout << end- start << std::endl;
+        std::cout << end- start << std::endl;
         std::cout << std::endl;
         // How many iterations did it take for GMRES to terminate?
         std::cout << j << std::endl;
-	}
-	MPI_Finalize();
+    }
+    MPI_Finalize();
 }
 
 

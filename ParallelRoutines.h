@@ -1,6 +1,12 @@
 /**************************************************************************
 *
-
+* Author: Anthony Goddard
+*
+* Discription:
+*
+*   This file provided all the parallel routines needed to implment
+*   a simple version of the all at once method.
+*
 *
 *************************************************************************/
 
@@ -32,7 +38,6 @@ void BlockMatVecMultiplication(int mynode, int numnodes,int N,int L, std::vector
 
 
 void MultiplicationByUKronIdentity(int mynode, int numnodes,int N,int L,std::complex<double>**U,std::complex<double> *x,std::complex<double>* y);
-
 
 
 void MultiplyByHeatSystem(int mynode, int numnodes,int N,int L, std::vector<std::complex<double> *>&blocks,std::complex<double>*mass,std::complex<double> *x,std::complex<double>* y);

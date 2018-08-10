@@ -24,37 +24,37 @@ std::complex<double> ** CreateMatrix(int m, int n)
 
 std::complex<double> * CreateMatrixContiguous(int m, int n)
 {
-	std::complex<double>* mat = new std::complex<double>[m*n];
-	for(int i=0;i<m*n;i++)
-	{
-		mat[i] = 0;
-	}
-	return mat;
+    std::complex<double>* mat = new std::complex<double>[m*n];
+    for(int i=0;i<m*n;i++)
+    {
+        mat[i] = 0;
+    }
+    return mat;
 }
 
 std::complex<double> * CreateTDMatrixContiguous(int n)
 {
-	std::complex<double>* mat = new std::complex<double>[3*n-2];
-	for(int i=0;i<3*n-2;i++)
-	{
-		mat[i] = 0;
-	}
-	return mat;
+    std::complex<double>* mat = new std::complex<double>[3*n-2];
+    for(int i=0;i<3*n-2;i++)
+    {
+        mat[i] = 0;
+    }
+    return mat;
 }
 
 void CreateTridiag(int N,tridiag & TD)
 {
-	std::complex<double> *two = new std::complex<double>[N];
-	std::complex<double> *one = new std::complex<double>[N-1];
-	std::complex<double> *three = new std::complex<double>[N-1];
+    std::complex<double> *two = new std::complex<double>[N];
+    std::complex<double> *one = new std::complex<double>[N-1];
+    std::complex<double> *three = new std::complex<double>[N-1];
 
-	for(int i=0;i<N;i++){two[i] = 0;}
-	for(int i=0;i<N-1;i++){one[i] = 0;}
-	for(int i=0;i<N-1;i++){three[i] = 0;}
+    for(int i=0;i<N;i++){two[i] = 0;}
+    for(int i=0;i<N-1;i++){one[i] = 0;}
+    for(int i=0;i<N-1;i++){three[i] = 0;}
 
-	std::get<0>(TD) = one;
-	std::get<1>(TD) = two;
-	std::get<2>(TD) = three;
+    std::get<0>(TD) = one;
+    std::get<1>(TD) = two;
+    std::get<2>(TD) = three;
 }
 
 

@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
 
 //  DECLARATION OF VARIABLES
     double start,end;           /* Used in timing the GMRES routine */
-    int i,j,k, N = 200,L=200;   /* N is the number of spatial steps, L is the number of time steps */
+    int i,j,k, N = 320,L=512;   /* N is the number of spatial steps, L is the number of time steps */
     double h = 1.0/(N-1);       /* The size of the spatial discretisaion step */ 
     double timestep = 1.0/L;    /* Timestep length */
 
@@ -265,7 +265,12 @@ int main(int argc, char * argv[])
     
 
     std::complex<double> normb,beta,resid; /* norm of preconditioned RHS*/
-    std::complex<double> tol = 0.00001;    /* tolerance */ 
+
+    // If we set the tolerance to 10^{-4} we get a fixed iteration count of 2 for 
+    // sufficiently large values of n and l. For  10^{-5} we get a fixed iteration 
+    // count of 3.
+
+    std::complex<double> tol = 0.0001;    /* tolerance */ 
 
     int complete = 0;
     int max_iter = 10;

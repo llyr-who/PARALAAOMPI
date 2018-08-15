@@ -1,22 +1,33 @@
 /*****************************************************
  *      Parallel routines used to solve
- *      all-at-once formualtions
+ *      all-at-once formualtions.
+ *
+ *      (Currently there are also serial routines as well.)
  *
  *      Code Author: Anthony Goddard
  *
  *      Github: anthonyjamesgoddard
  *
- *      Contact: Please feel free to 
- *      contact me on updates surrounding
- *      the code, etc.
+ *      Contact: Please feel free to contact me to implement
+ *               suggested improvements. This is my first 
+ *               parallel software and so there are some
+ *               glaring software development practice issues.
+ *
+ *         
  *
  *
  *      VERY IMPORTANT :
  *          This will only work if the number of processes it is passed
  *          divides L exactly. This is by design. "odd" problem sizes
- *          would significant slow down the calculation even if the 
+ *          would significantly slow down the calculation even if the 
  *          functionality was present.
  *
+ *          There are further restrictions when dealing using the FFT.
+ *          To be safe the input parameters N,L must be powers of 2.
+ *
+ *      TODO: 
+ *		    Separate serial and parallel rotuines.
+ *		    Remove mixed usage of AllGather and AllGatherv to just use AllGather.
  *
  * ***************************************************/
 
@@ -33,9 +44,16 @@
 
 using namespace std;
 
-
-
+//////////////////////////////////////////////////////////////
+//
 // PREAMBLE FUNCTIONS THAT !!DO NOT!! NEED TO BE DISTRIBUTED 
+//
+//////////////////////////////////////////////////////////////
+
+// Multiplication of a tridiagonal matrix by a constant
+//
+// coeff : input constant
+// matrix: the matrix that will bte multiplied.
 
 void MultiplyTriDiagByConst(int N, std::complex<double> coeff, tridiag& matrix)
 {
@@ -51,6 +69,11 @@ void MultiplyTriDiagByConst(int N, std::complex<double> coeff, tridiag& matrix)
     }
 }
 
+// Addition of two tridiagonal matrices
+//
+// matrix1,matrix2  : are the input matrices
+// matrix 3         : the output matrix.
+
 void AddTriDiag(int N, tridiag& matrix1,tridiag& matrix2,tridiag& matrix3)
 {
     int i;
@@ -65,7 +88,13 @@ void AddTriDiag(int N, tridiag& matrix1,tridiag& matrix2,tridiag& matrix3)
     }
 }
 
-// h: stepssize
+// The following code generates the Mass and Stiffness matrices
+// 
+// mass, stiff: output matrices
+// h,N : input parameters. 
+// 
+// Having both h and N is redundant.
+
 void FormMassStiff(double h,int N,tridiag& mass, tridiag& stiff)
 {
     int i;
@@ -105,6 +134,13 @@ void FormMassStiff(double h,int N,tridiag& mass, tridiag& stiff)
     std::get<1>(stiff)[N-1] = 0;
 }
 
+// Forms the fourier matrix, its transpose and the 
+// eigenvalue matrix of the Circulant $\Sigma$
+//
+// F : Fourier matrix
+// D : Diagonal matrix of eigenvalues
+// F^* : conjugate transpose of F
+
 void FormFourier_Diag_FourierTranspose(int N,std::complex<double>*F,std::complex<double>*D,std::complex<double>*Ft)
 {
     std::complex<double> imag(0,1);
@@ -127,10 +163,82 @@ void FormFourier_Diag_FourierTranspose(int N,std::complex<double>*F,std::complex
     }
 }
 
+// This is the routine that carries out the FFT.
+// It only returns a correct result if it is given
+// a input whos length is a power of 2.
 
+
+// It is essentially a copy and paste from Wiki. 
+// There are methods that are more kind on memory than this,
+// but as it turned out (reffering to the paper)
+// the FFT method is not the way to go for an all-at-once
+// implementation. 
+
+// separate even/odd elements to lower/upper halves of array respectively.
+// Due to Butterfly combinations, this turns out to be the simplest way 
+// to get the job done without clobbering the wrong elements.
+void separate (std::complex<double>* a, int n) {
+    std::complex<double>* b = new std::complex<double>[n/2];  // get temp heap storage
+    for(int i=0; i<n/2; i++)    // copy all odd elements to heap storage
+        b[i] = a[i*2+1];
+    for(int i=0; i<n/2; i++)    // copy all even elements to lower-half of a[]
+        a[i] = a[i*2];
+    for(int i=0; i<n/2; i++)    // copy all odd (from heap) to upper-half of a[]
+        a[i+n/2] = b[i];
+    delete[] b;                 // delete heap storage
+}
+
+// N must be a power-of-2, or bad things will happen.
+// Currently no check for this condition.
+//
+// N input samples in X[] are FFT'd and results left in X[].
+// Because of Nyquist theorem, N samples means 
+// only first N/2 FFT results in X[] are the answer.
+// (upper half of X[] is a reflection with no new information).
+
+void FFT(std::complex<double>* X, int N,int inverse) {
+    int factor = 1;
+    if(N < 2) {
+        // bottom of recursion.
+        // Do nothing here, because already X[0] = x[0]
+    } else {
+        separate(X,N);      // all evens to lower half, all odds to upper half
+        FFT(X,     N/2,inverse);   // recurse even items
+        FFT(X+N/2, N/2,inverse);   // recurse odd  items
+        // combine results of two half recursions
+        for(int k=0; k<N/2; k++) {
+            std::complex<double> e = X[k    ];   // even
+            std::complex<double> o = X[k+N/2];   // odd
+            // w is the "twiddle-factor"
+            if(inverse) factor=-1;
+            std::complex<double> w = exp( std::complex<double>(0,-2.*M_PI*factor*k/N) );
+            X[k    ] = e + w * o;
+            X[k+N/2] = e - w * o;
+        }
+    }
+}
+
+
+
+///////////////////////////////////////////////////////
+//
 // PARALLEL FUNCTIONS THAT !!DO!! NEED TO BE DISTRIBUTED
+//
+////////////////////////////////////////////////////////
 
-// input is x, output is z
+
+// This routine carries out the vector transpose in parallel.
+//
+// x : input vector
+// z : output transposed vector
+//
+// Comments:
+//          The input is assummed to be in collumn major form. Since we know that the
+//          vector is of length N*L we can split it up into chunks and treat each of 
+//          these N-chunks (or L-chunks) as a collumn vector of a matrx.
+//          By using some simple index arithmatic we can then map the entries of the old
+//          vector to a new vector.
+//
 void VecTranspose(int mynode,int numnodes,int N,int L, std::complex<double>*x,std::complex<double>*z)
 {
     int i,j,k;
@@ -150,13 +258,13 @@ void VecTranspose(int mynode,int numnodes,int N,int L, std::complex<double>*x,st
 }
 
 
+// This routine solves "q=Ax" for x where A is block tridiagonal. The matrices blocks are split up
+// into groups of size blocks_local and then solved in the usuual serial way.
+//
+// blocks: the diagonal blocks
+// q : as above.
+// x as above, the solution.
 
-// The diagonal blocks are serialised. This means that the first N-1 entries are the 
-// first subdiagonal, the next N entries are the main diagonal and the remaining entries
-// contain the remaining superdiagonal.
-
-
-// The right hand side is q
 void BlockTriDiagSolve_Thomas(int mynode, int numnodes,int N,int L, std::vector<std::complex<double> *>&blocks,std::complex<double> *x,std::complex<double>* q)
 {
     int i,j,k;
@@ -279,9 +387,7 @@ void BlockTriDiagSolve_Thomas(int mynode, int numnodes,int N,int L, std::vector<
 
 
 
-
-
-
+// Block matrix vector multiplication.
 void BlockMatVecMultiplication(int mynode, int numnodes,int N,int L, std::vector<std::complex<double> *>&blocks,std::complex<double> *x,std::complex<double>* y)
 {
     int i,j;
@@ -369,12 +475,7 @@ void BlockMatVecMultiplication(int mynode, int numnodes,int N,int L, std::vector
 }
 
 
-//    This routine seeks to remove the communication induced
-//    by the vector transpose operator matrix.
-//
-//    This routine currently abuses the fact that the U's
-//    that we are using are given are symmetric.
-
+//    This routine evaluates (Kron(U,eye(N))) x = y 
 
 void MultiplicationByUKronIdentity(int mynode, int numnodes,int N,int L,std::complex<double>**U,std::complex<double> *x,std::complex<double>* y)
 {
@@ -465,7 +566,37 @@ void MultiplicationByUKronIdentity(int mynode, int numnodes,int N,int L,std::com
     delete [] temp;
     delete [] count;
     delete [] displacements;
+	DestroyMatrix(Ulocal,blocks_local,L);
     
+}
+
+
+// This evaluates (Kron(eye(N),U))*x = y (OR (Kron(eye(N),U^*))*x = y ) using the fast fourier tranform.
+//
+// x: is the input vector
+// y: is the output vector
+// inverse: indicates whether we are are using U or U^*.
+
+void MultiplicationByIdentityKronU_usingFFT(int mynode, int numnodes,int N,int L,std::complex<double> *x,std::complex<double>* y,int inverse)
+{
+    int i;
+    int local_offset,blocks_local;
+    // The number of blocks each processor is dealt
+    blocks_local = N/numnodes;
+
+    // The part of the output vector per process.
+    std::complex<double> *temp = new std::complex<double>[L*blocks_local];
+
+    // the offset
+    local_offset = mynode*blocks_local;
+
+    for(i = 0;i<blocks_local;i++)
+    {
+		std::copy(&x[local_offset*L + i*L], &x[local_offset*L + (i+1)*L], &temp[i*L]);
+		FFT(&temp[i*L],L,inverse);
+    }
+    for(i=0;i<L*blocks_local;i++) temp[i] *= (1.0/std::sqrt(L));
+    MPI_Allgather(temp,L*blocks_local,MPI_DOUBLE_COMPLEX,y,L*blocks_local,MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD); 
 }
 
 
@@ -768,6 +899,12 @@ void MultiplyByWaveSystem(int mynode, int numnodes,int N,int L, std::vector<std:
 
 }
 
+//
+// The following routines are obvious parallel implementations of simple
+// vector operations.
+//
+
+
 void DotProduct(int mynode, int numnodes,int N,int L, std::complex<double> *x,std::complex<double>* y,std::complex<double>&result)
 {
     int i;
@@ -813,26 +950,6 @@ void VectorSubtraction(int mynode, int numnodes,int N,int L, std::complex<double
     delete [] temp;
 }
 
-// q is input and x is output.
-
-
-void PostProcessing(int mynode, int numnodes,int N,int L, std::complex<double> *x)
-{ 
-    int i;
-    int local_chunks = L/numnodes;
-    int local_offset = mynode*local_chunks;
-    std::complex<double>* temp = new std::complex<double>[N*local_chunks];  
-    for(i=0;i<local_chunks*N;i++)
-    {
-        temp[i] = x[local_offset*N + i];
-    }
-    for(i=0;i<local_chunks*N;i++)
-    {
-        temp[i] = x[N*L-(i+1 + local_offset*N)].real();
-    }
-    MPI_Allgather(temp,N*local_chunks,MPI_DOUBLE_COMPLEX,x,N*local_chunks,MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD);
-    delete [] temp;
-}
 
 void SetEqualTo(int mynode, int numnodes,int N,int L, std::complex<double> *x,std::complex<double>*q,std::complex<double>scalar)
 { 
@@ -860,6 +977,11 @@ void PlusEqualTo(int mynode, int numnodes,int N,int L, std::complex<double> *x,s
     MPI_Allgather(temp,N*local_chunks,MPI_DOUBLE_COMPLEX,q,N*local_chunks,MPI_DOUBLE_COMPLEX,MPI_COMM_WORLD);
     delete [] temp;
 }
+
+
+
+// Application of the preconditioners
+
 void ApplyPreconditioner(int mynode,int totalnodes,int N, int L,std::complex<double>**U,std::complex<double>**Ut,std::vector<std::complex<double>*>& Wblks,std::complex<double>* q, std::complex<double>* x)
 {
     // We need to make a copy of q and conduct calculations on that. 
@@ -867,6 +989,7 @@ void ApplyPreconditioner(int mynode,int totalnodes,int N, int L,std::complex<dou
     std::complex<double>*b = new std::complex<double>[N*L];
     SetEqualTo(mynode,totalnodes,N,L,q,b,1.0);
     
+    // This follows the paper exactly. The non-FFT implementation.
     MultiplicationByUKronIdentity(mynode,totalnodes,N,L,Ut,b,x);
     BlockTriDiagSolve_Thomas(mynode,totalnodes,N,L,Wblks,b,x);
     MultiplicationByUKronIdentity(mynode,totalnodes,N,L,U,b,x);
@@ -874,14 +997,44 @@ void ApplyPreconditioner(int mynode,int totalnodes,int N, int L,std::complex<dou
     delete [] b;
 }
 
+void ApplyPreconditionerFFT(int mynode,int totalnodes,int N, int L,std::vector<std::complex<double>*>& Wblks,std::complex<double>* q, std::complex<double>* x)
+{
+    // As we can see there is a significant memory footprint by using this
+    // method.
+    std::complex<double>*b = new std::complex<double>[N*L];
+    SetEqualTo(mynode,totalnodes,N,L,q,b,1.0);
+
+    VecTranspose(mynode,totalnodes,L,N,b,x);
+    MultiplicationByIdentityKronU_usingFFT(mynode, totalnodes,N,L,x,b,1); 
+    VecTranspose(mynode,totalnodes,N,L,b,x);
+
+    BlockTriDiagSolve_Thomas(mynode,totalnodes,N,L,Wblks,b,x);
+
+    VecTranspose(mynode,totalnodes,L,N,b,x);
+    MultiplicationByIdentityKronU_usingFFT(mynode, totalnodes,N,L,x,b,0); 
+    VecTranspose(mynode,totalnodes,N,L,b,x);
+
+    delete [] b;
+}
+
 void ApplyNonUniformPreconditionerWithOneTerm(int mynode,int totalnodes,int N, int L,std::complex<double>**U,std::complex<double>**Ut,std::vector<std::complex<double>*>& Wblks,std::vector<std::complex<double>*> sigmaKronK,std::complex<double>* q, std::complex<double>* x)
 {
-    std::complex<double> *b = new std::complex<double>[N*L];
-    std::complex<double> *buffer = new std::complex<double>[N*L];
+	// Use buffers to store intermediate results
+    std::complex<double> *buffer1 = new std::complex<double>[N*L];
+    std::complex<double> *buffer2 = new std::complex<double>[N*L];
+    std::complex<double> *buffer3 = new std::complex<double>[N*L];
 
-    ApplyPreconditioner(mynode,totalnodes,N,L,U,Ut,Wblks,q,b);
-    BlockMatVecMultiplication(mynode,totalnodes,N,L,sigmaKronK,b,buffer);
-    VectorSubtraction(mynode,totalnodes,N,L,b,buffer,x);
+	// Apply preconditioner to buffer and store for later use
+    ApplyPreconditioner(mynode,totalnodes,N,L,U,Ut,Wblks,q,buffer1);
+
+	// Apply block matrix multiplication and store for later use
+    BlockMatVecMultiplication(mynode,totalnodes,N,L,sigmaKronK,buffer1,buffer2);
+
+	// Apply preconditioner to result of above calculations
+    ApplyPreconditioner(mynode,totalnodes,N,L,U,Ut,Wblks,buffer2,buffer3);
+
+	// carry out the subtraction
+    VectorSubtraction(mynode,totalnodes,N,L,buffer1,buffer3,x);
 }
 
 void CalculateNorm(int mynode, int totalnodes,int N, int L,std::complex<double>* vectocalnorm, std::complex<double>& result)

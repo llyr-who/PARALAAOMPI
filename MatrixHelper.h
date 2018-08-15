@@ -32,7 +32,7 @@ std::complex<double> * CreateTDMatrixContiguous(int n);
 void CreateTridiag(int N,tridiag & TD);
 
 // Destroys "vector of vector" matrices.
-void DestroyMatrix(double ** mat, int m, int n); 
+void DestroyMatrix(std::complex<double> ** mat, int m, int n); 
 
 // Memory clean-up routines need to be implemented for
 // the other types of matrices used

@@ -59,7 +59,7 @@ void CreateTridiag(int N,tridiag & TD)
 
 
 
-void DestroyMatrix(double ** mat, int m, int n)
+void DestroyMatrix(std::complex<double> ** mat, int m, int n)
 {
     for(int i=0;i<m;i++)
         delete[] mat[i];

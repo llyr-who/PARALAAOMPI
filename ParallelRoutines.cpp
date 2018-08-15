@@ -566,7 +566,6 @@ void MultiplicationByUKronIdentity(int mynode, int numnodes,int N,int L,std::com
     delete [] temp;
     delete [] count;
     delete [] displacements;
-	DestroyMatrix(Ulocal,blocks_local,L);
     
 }
 

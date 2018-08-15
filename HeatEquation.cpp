@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
 
 //  DECLARATION OF VARIABLES
     double start,end;           /* Used in timing the GMRES routine */
-    int i,j,k, N = 320,L=768;   /* N is the number of spatial steps, L is the number of time steps */
+    int i,j,k, N = 200,L=200;   /* N is the number of spatial steps, L is the number of time steps */
     double h = 1.0/(N-1);       /* The size of the spatial discretisaion step */ 
     double timestep = 1.0/L;    /* Timestep length */
     double delta = 0.0;         /* Perturbation of temproal domain */
@@ -115,7 +115,7 @@ int main(int argc, char * argv[])
         tridiag stiffA0;CreateTridiag(N,stiffA0);
         SetTriDiagEqualTo(N,stiff,stiffA0);
 
-        MultiplyTriDiagByConst(N,timestep*timestep,stiffA0);
+        MultiplyTriDiagByConst(N,timestep,stiffA0);
         // At this point we have
         //  stiffA0 = timestep*K
 
@@ -234,7 +234,7 @@ int main(int argc, char * argv[])
         // The smooth initial condition.
         for(i=0;i<N;i++) u0[i] = sin(2*M_PI*i*h);
     
-
+/*
         // The non-smooth initial condition.
         for(i=0;i<N;i++)
         {
@@ -245,7 +245,7 @@ int main(int argc, char * argv[])
                u0[i] = cos(4*M_PI*(i*h-0.5))*cos(4*M_PI*(i*h-0.5));
            }
         }
-
+*/
         std::complex<double> prod =0;
         U0[0] = massContig[N-1]*u0[0] +  massContig[2*N-1]*u0[1];
         for(j=1;j<N-1;j++)

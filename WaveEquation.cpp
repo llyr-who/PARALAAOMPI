@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
 
 //  DECLARATION OF VARIABLES
     double start,end;           /* Used in timing the GMRES routine */
-    int i,j,k, N = 320,L=768;   /* N is the number of spatial steps, L is the number of time steps */
+    int i,j,k, N = 200,L=200;   /* N is the number of spatial steps, L is the number of time steps */
     double h = 1.0/(N-1);       /* The size of the spatial discretisaion step */ 
     double timestep = 1.0/L;    /* Timestep length */
 
@@ -220,7 +220,7 @@ int main(int argc, char * argv[])
         // The smooth initial condition.
         for(i=0;i<N;i++) u0[i] = sin(2*M_PI*i*h);
     
-
+/*
         // The non-smooth initial condition.
         for(i=0;i<N;i++)
         {
@@ -231,7 +231,7 @@ int main(int argc, char * argv[])
                u0[i] = cos(4*M_PI*(i*h-0.5))*cos(4*M_PI*(i*h-0.5));
            }
         }
-
+*/
         std::complex<double> prod =0;
         U0[0] = massContig[N-1]*u0[0] +  massContig[2*N-1]*u0[1];
         for(j=1;j<N-1;j++)
@@ -284,7 +284,7 @@ int main(int argc, char * argv[])
         start = MPI_Wtime();
     }
 
-
+    
 // ----------------------Calculaution Phase Begin ----------------------------------------------------
 
     // As we are measuring on node 0, we want all processes to
@@ -299,7 +299,6 @@ int main(int argc, char * argv[])
 
     j=1;
     
-
     // Calculation of ||P^{-1}b||
     ApplyPreconditioner(mynode,totalnodes,N,L,UMonolithic,UtMonolithic,Wblocks,b,temp);
     CalculateNorm(mynode,totalnodes,N,L,temp,normb);

@@ -310,7 +310,6 @@ int main(int argc, char * argv[])
 
 // ---------------------------- GMRES BEGIN ----------------------------------------------------------
 
-    // Our GMRES implementation is essentially a copy of the "wiki" implementation of GMRES
 
     j=1;
     

@@ -168,15 +168,17 @@ void FormFourier_Diag_FourierTranspose(int N,std::complex<double>*F,std::complex
 // a input whos length is a power of 2.
 
 
-// It is essentially a copy and paste from Wiki. 
-// There are methods that are more kind on memory than this,
-// but as it turned out (reffering to the paper)
-// the FFT method is not the way to go for an all-at-once
-// implementation. 
+// It is essentially a copy and paste from Wiki as it is a 
+// solid implementation. 
+// There are better method than this that involve bit switching.
+// These methods are much easier on the memory requirements
+
+//-------------------------------------------FROM WIKI
 
 // separate even/odd elements to lower/upper halves of array respectively.
 // Due to Butterfly combinations, this turns out to be the simplest way 
 // to get the job done without clobbering the wrong elements.
+
 void separate (std::complex<double>* a, int n) {
     std::complex<double>* b = new std::complex<double>[n/2];  // get temp heap storage
     for(int i=0; i<n/2; i++)    // copy all odd elements to heap storage
@@ -218,7 +220,7 @@ void FFT(std::complex<double>* X, int N,int inverse) {
     }
 }
 
-
+//----------------------------------------END FROM WIKI
 
 ///////////////////////////////////////////////////////
 //

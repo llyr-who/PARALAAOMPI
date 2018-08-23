@@ -300,6 +300,9 @@ int main(int argc, char * argv[])
 
 // ---------------------------- GMRES BEGIN ----------------------------------------------------------
 
+    // Our GMRES routine follows Trefethens NLA very closely. 
+    // The sub routines are C++ implementations of the Wiki MATLAB implementation.
+    
     j=1;
     
     // Calculation of ||P^{-1}b||

@@ -327,7 +327,7 @@ int main(int argc, char * argv[])
     }
 
     std::vector<std::complex<double>*> v; 
-    for(int i=0;i<m+1;i++)
+    for(i=0;i<m+1;i++)
     {
         std::complex<double> *pointer = new std::complex<double>[N*L];
         v.push_back(pointer);
@@ -368,17 +368,14 @@ int main(int argc, char * argv[])
             resid = fabs(s[i+1]);
             if(resid.real()/normb.real() < tol.real())
             {
-                Update(x,N*L,m,m,H,s,v);
+                Update(x,N*L,i,m,H,s,v);
                 tol = resid;
                 max_iter = j;
                 complete = 1;
             }
-            if(complete) continue;
-             
-        }
-        
-        Update(x,N*L,m-1,m,H,s,v);
-        
+        } 
+        if(complete) continue;
+        Update(x,N*L,m-1,m,H,s,v); 
         // Calculation of r = P^{-1}(b-A*x)
         MultiplyByWaveSystem(mynode,totalnodes,N,L,Ablocks,massContig,x,temp);
         VectorSubtraction(mynode,totalnodes,N,L,b,temp,temp2);
@@ -394,8 +391,7 @@ int main(int argc, char * argv[])
             max_iter = j;
             complete = 1;
         }
-        if (complete)continue;
-        
+        if (complete)continue; 
     }
    
 //

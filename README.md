@@ -4,6 +4,7 @@ A simple parallel implementation of the all-at-once method.
 The all-at-once method is outlined in the paper 
 
     "Preconditioning and iterative solution of all-at-once systems for evolutionary partial differential equations"
+        by McDonald, Pestana, Wathen.
 
 In this paper it is claimed that the all-at-once method is a parallel method. This code seeks to be a proof-of-concept
 code. There are a few improvements suggested:
@@ -20,4 +21,4 @@ code. There are a few improvements suggested:
         The monolithic systems can then be automatically generated and
         solved using GMRES.
 
-
+There have been some recent improvements made that reduce the execution time by approximately 70% in cases where n,l ~ 500. 

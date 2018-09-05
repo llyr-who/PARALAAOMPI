@@ -379,21 +379,20 @@ int main(int argc, char * argv[])
             resid = fabs(s[i+1]);
             if(resid.real()/normb.real() < tol.real())
             {
-                Update(x,N*L,m,m,H,s,v);
+                Update(x,N*L,i,m,H,s,v); // we only need to go as far as i.
                 tol = resid;
                 max_iter = j;
                 complete = 1;
-            }
-             
+            }      
         }
-        
-        Update(x,N*L,m-1,m,H,s,v);
-        
+
+        if(complete) continue;
+
+        Update(x,N*L,i-1,m,H,s,v);
         // Calculation of r = P^{-1}(b-A*x)
         MultiplyByHeatSystem(mynode,totalnodes,N,L,Ablocks,massContig,x,temp);
         VectorSubtraction(mynode,totalnodes,N,L,b,temp,temp2);
         ApplyPreconditioner(mynode,totalnodes,N,L,UMonolithic,UtMonolithic,Wblocks,temp2,r0);
-
 
         // Calculate beta = ||r||
         CalculateNorm(mynode,totalnodes,N,L,r0,beta);
@@ -404,8 +403,7 @@ int main(int argc, char * argv[])
             max_iter = j;
             complete = 1;
         }
-        if (complete)continue;
-        
+        if (complete)continue;        
     }
    
 //

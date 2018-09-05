@@ -21,5 +21,5 @@ code. There are a few improvements suggested:
         The monolithic systems can then be automatically generated and
         solved using GMRES.
 
-There have been some recent improvements made that reduce the execution time by approximately 70% compared to the timed
+There have been some recent improvements made that reduce the execution time by ~30% compared to the timed
 results provided in the paper "Wathen and Goddard".

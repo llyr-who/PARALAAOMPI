@@ -384,7 +384,6 @@ int main(int argc, char * argv[])
                 max_iter = j;
                 complete = 1;
             }
-            if(complete) continue;
              
         }
         

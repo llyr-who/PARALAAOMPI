@@ -11,8 +11,8 @@ code. This code is my first attempt at parallel computing and as a result there 
 
 I would be interested in writing a more general (and improved) implementation if the interest is there. 
 
-The results from thiscode have been submitted for review:
+The results from this code have been submitted for review:
 
 https://arxiv.org/abs/1810.00615
 
-There has also been some work on a GPU implementation which I include as techreport.pdf in this repo.
+There has also been some work on a GPU implementation and an application to non-linear systems which I include as techreport.pdf in this repo.

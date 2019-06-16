@@ -13,6 +13,6 @@ I would be interested in writing a more general (and improved) implementation if
 
 The results from this code have been submitted for review:
 
-https://arxiv.org/abs/1810.00615
+http://etna.mcs.kent.edu/volumes/2011-2020/vol51/
 
 There has also been some work on a GPU implementation and an application to non-linear systems which I include as techreport.pdf in this repo.

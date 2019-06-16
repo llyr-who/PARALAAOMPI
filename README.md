@@ -11,7 +11,7 @@ code. This code is my first attempt at parallel computing and as a result there 
 
 I would be interested in writing a more general (and improved) implementation if the interest is there. 
 
-The results from this code have been submitted for review:
+The results from this have been published in ETNA : 
 
 http://etna.mcs.kent.edu/volumes/2011-2020/vol51/
 

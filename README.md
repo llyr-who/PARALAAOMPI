@@ -13,6 +13,6 @@ I would be interested in writing a more general (and improved) implementation if
 
 The results from this have been published in ETNA : 
 
-http://etna.mcs.kent.edu/volumes/2011-2020/vol51/
+http://etna.mcs.kent.edu/volumes/2011-2020/vol51/abstract.php?vol=51&pages=135-150
 
 There has also been some work on a GPU implementation and an application to non-linear systems which I include as techreport.pdf in this repo.

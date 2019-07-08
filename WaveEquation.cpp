@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <mpi.h>
 #include <math.h>
+#include <getopt.h>
 #include "MatrixHelper.h"
 #include "ParallelRoutines.h"
 
@@ -36,7 +37,7 @@ int main(int argc, char * argv[])
 
 //  DECLARATION OF VARIABLES
     double start,end;           /* Used in timing the GMRES routine */
-    int i,j,k, N = 320,L=512;   /* N is the number of spatial steps, L is the number of time steps */
+    int i,j,k, N = 32,L=64;   /* N is the number of spatial steps, L is the number of time steps */
     double h = 1.0/(N-1);       /* The size of the spatial discretisaion step */ 
     double timestep = 1.0/L;    /* Timestep length */
 
@@ -55,6 +56,22 @@ int main(int argc, char * argv[])
 
 // RESERVATION OF MEMORY
 
+    int opt;
+    while((opt = getopt(argc, argv, "N:L:")) != -1) {
+        switch(opt) {
+            case 'N':
+                N = atoi(optarg);
+                break;
+            case 'L':
+                L = atoi(optarg);
+                break;
+            default:
+                cerr << "argument parsing problem" << std::endl;
+                exit(EXIT_FAILURE);
+        }
+    }
+
+
     // Intermediate calculation vectors
     y = new std::complex<double>[N*L];
     x = new std::complex<double>[N*L];
@@ -63,6 +80,7 @@ int main(int argc, char * argv[])
 
     // Right hand side vector
     b = new std::complex<double>[N*L];
+
 
 
     // All vectors are given to all nodes. While this increases the 
@@ -365,7 +383,7 @@ int main(int argc, char * argv[])
             ApplyPlaneRotation(H[i+i*m], H[(i+1)+i*m], cs[i], sn[i]);
             ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
         
-            resid = fabs(s[i+1]);
+            resid = std::abs(s[i+1]);
             if(resid.real()/normb.real() < tol.real())
             {
                 Update(x,N*L,i,m,H,s,v);
@@ -408,10 +426,10 @@ int main(int argc, char * argv[])
     if(mynode == 0)
     {
         end = MPI_Wtime();
-        // Print the time taken for the calculation to complete
+        std::cout<< " Time taken for the calculation to complete" << std::endl;
         std::cout << end- start << std::endl;
         std::cout << std::endl;
-        // How many iterations did it take for GMRES to terminate?
+        std::cout << "  How many iterations did it take for GMRES to terminate? " << std::endl;
         std::cout << j << std::endl;
     }
     MPI_Finalize();

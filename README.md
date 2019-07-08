@@ -15,4 +15,21 @@ The results from this have been published in ETNA :
 
 http://etna.mcs.kent.edu/volumes/2011-2020/vol51/abstract.php?vol=51&pages=135-150
 
-There has also been some work on a GPU implementation and an application to non-linear systems which I include as techreport.pdf in this repo.
+There has also been some work on a GPU implementation and an application to non-linear systems which I include as techreport.pdf in this repo. 
+
+As this code was a proof-of-concept code designed and written under very tight time contraints the solver is not modular
+in any way. In order to run this code you will have to choose which equation you would like to solve, the heat equation
+or the wave equation. Open the makefile and select which one you would like to solve. Then type
+
+    make
+
+at the command line.
+
+Then to run this code
+
+    mpirun -np 4 paralaaompi -N 128 -L 32
+
+where you are requesting 4 processes, a spatial discretisaion of 128 nodes and a temporal discretisation of 32 nodes. If
+there are any problems then either create an issue on GitHub or contact me on antg3254 - AT - gmail.com
+
+

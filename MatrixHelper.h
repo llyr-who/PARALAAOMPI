@@ -45,4 +45,3 @@ void SetTriDiagEqualTo(int N, tridiag& oldTB,tridiag& newTD);
 
 #endif
 
-

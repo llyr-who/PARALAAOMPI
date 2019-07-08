@@ -16,6 +16,8 @@
 #include <iostream>
 #include <iomanip>
 #include <mpi.h>
+#include <math.h>
+#include <unistd.h>
 #include "MatrixHelper.h"
 #include "ParallelRoutines.h"
 
@@ -31,10 +33,12 @@ void ApplyPlaneRotation(std::complex<double> &dx, std::complex<double> &dy, std:
 int main(int argc, char * argv[])
 {
 
-
 //  DECLARATION OF VARIABLES
+//  N is the number of spatial nodes 
+//  L is the number of tempotal nodes
+    int N = 64,L = 64;
     double start,end;           /* Used in timing the GMRES routine */
-    int i,j,k, N = 320,L=512;   /* N is the number of spatial steps, L is the number of time steps */
+    int i,j,k;                  
     double h = 1.0/(N-1);       /* The size of the spatial discretisaion step */ 
     double timestep = 1.0/L;    /* Timestep length */
     double delta = 0.0;         /* Perturbation of temproal domain */
@@ -53,7 +57,22 @@ int main(int argc, char * argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &totalnodes);
     MPI_Comm_rank(MPI_COMM_WORLD, &mynode);
 
-// RESERVATION OF MEMORY
+    int opt;
+    while((opt = getopt(argc, argv, "N:L:")) != -1) {
+        switch(opt) {
+            case 'N':
+                N = atoi(optarg);
+                break;
+            case 'L':
+                L = atoi(optarg);
+                break;
+            default:
+                cerr << "argument parsing problem" << std::endl;
+                exit(EXIT_FAILURE);
+        }
+    }    
+    
+    // RESERVATION OF MEMORY
 
     // Intermediate calculation vectors
     y = new std::complex<double>[N*L];
@@ -376,7 +395,7 @@ int main(int argc, char * argv[])
             ApplyPlaneRotation(H[i+i*m], H[(i+1)+i*m], cs[i], sn[i]);
             ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
         
-            resid = fabs(s[i+1]);
+            resid = std::abs(s[i+1]);
             if(resid.real()/normb.real() < tol.real())
             {
                 Update(x,N*L,i,m,H,s,v); // we only need to go as far as i.
@@ -420,10 +439,11 @@ int main(int argc, char * argv[])
     if(mynode == 0)
     {
         end = MPI_Wtime();
-        // Print the time taken for the calculation to complete
+        std::cout <<  " Time taken for the calculation to complete with  " << std::endl;
+        std::cout << "N = " << N << ", L = " << L  << std::endl;
         std::cout << end- start << std::endl;
         std::cout << std::endl;
-        // How many iterations did it take for GMRES to terminate?
+        std::cout <<  " How many iterations did it take for GMRES to terminate?" << std::endl;
         std::cout << j << std::endl;
     }
     MPI_Finalize();

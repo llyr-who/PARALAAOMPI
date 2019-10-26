@@ -30,6 +30,6 @@ Then to run this code
     mpirun -np 4 paralaaompi -N 128 -L 32
 
 where you are requesting 4 processes, a spatial discretisaion of 128 nodes and a temporal discretisation of 32 nodes. If
-there are any problems then either create an issue on GitHub or contact me on antg3254 - AT - gmail.com
+there are any problems then create an issue on here.
 
 

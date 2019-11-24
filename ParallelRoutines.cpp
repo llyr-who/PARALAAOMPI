@@ -4,9 +4,9 @@
  *
  *      (Currently there are also serial routines as well.)
  *
- *      Code Author: Anthony Goddard
+ *      Code Author: llyr-who
  *
- *      Github: anthonyjamesgoddard
+ *      Github: llyr-who
  *
  *      Contact: Please feel free to contact me to implement
  *               suggested improvements. This is my first 

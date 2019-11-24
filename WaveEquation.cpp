@@ -1,9 +1,9 @@
 /* 
  *  Filename: WaveEquation.h
  *
- *  Author: Anthony Goddard. 
+ *  Author: llyr-who. 
  *
- *  GitHub: anthonyjamesgoddard/PARALAAOMPI
+ *  GitHub: llyr-who/PARALAAOMPI
  *
  *  Discription: 
  *

@@ -1,6 +1,6 @@
 /**************************************************************************
 *
-* Author: Anthony Goddard
+* Author: llyr-who
 *
 * Discription:
 *
